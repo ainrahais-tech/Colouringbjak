@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bjakcolouring - Belajar Warna & Mewarna</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+    <style>
+        body {
+            font-family: 'Comic Neue', cursive, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .bubble-btn {
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 8px 0 #cbd5e1;
+        }
+        .bubble-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 4px 0 #cbd5e1;
+        }
+        .color-palette {
+            box-shadow: inset 0 4px 6px rgba(0,0,0,0.05);
+        }
+        /* Custom standard canvas pointer */
+        canvas {
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="%23FF5757" d="M12 2c5.52 0 10 4.48 10 10s-4.48 10-10 10S2 17.52 2 12S6.48 2 12 2z"/></svg>'), auto;
+        }
+    </style>
+</head>
+<body class="bg-amber-50 min-h-screen flex flex-col justify-between overflow-x-hidden text-slate-800 text-xl">
+
+    <header class="bg-white p-4 shadow-md flex justify-between items-center rounded-b-3xl border-b-4 border-amber-200">
+        <div class="flex items-center space-x-2 animate-bounce">
+            <span class="text-3xl md:text-4xl text-pink-500">🎨</span>
+            <h1 class="text-2xl md:text-4xl font-black tracking-wider text-purple-600">Bjak<span class="text-orange-500">colouring</span></h1>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <button id="langBtn" onclick="toggleLanguage()" class="bubble-btn bg-sky-400 text-white px-4 py-2 rounded-full font-bold text-lg md:text-xl border-2 border-sky-500 active:bg-sky-500">
+                🇲🇾 BM
+            </button>
+            <button id="audioBtn" onclick="toggleAudio()" class="bubble-btn bg-emerald-400 text-white p-2 rounded-full text-lg md:text-xl border-2 border-emerald-500">
+                🔊
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-grow p-4 flex flex-col items-center justify-center max-w-4xl mx-auto w-full">
+        
+        <div id="menuModule" class="w-full text-center space-y-6 py-8">
+            <p id="welcomeTxt" class="text-2xl md:text-3xl font-bold text-slate-600 animate-pulse">Hai kawan-kawan! Jom belajar warna! ✨</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-md mx-auto">
+                <button onclick="startModule('learn')" class="bubble-btn bg-rose-400 text-white p-6 rounded-3xl text-2xl font-bold border-4 border-rose-500 hover:scale-105 transition-transform flex flex-col items-center space-y-2">
+                    <span class="text-5xl">💡</span>
+                    <span id="btnLearn">Kenal Warna</span>
+                </button>
+                <button onclick="startModule('game')" class="bubble-btn bg-violet-400 text-white p-6 rounded-3xl text-2xl font-bold border-4 border-violet-500 hover:scale-105 transition-transform flex flex-col items-center space-y-2">
+                    <span class="text-5xl">🖍️</span>
+                    <span id="btnGame">Mari Mewarna</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="learnModule" class="w-full hidden space-y-6 text-center">
+            <button onclick="goBack()" class="bubble-btn bg-gray-400 text-white px-4 py-2 rounded-full font-bold float-left text-lg">← <span id="backTxt1">Kembali</span></button>
+            <div class="clear-both"></div>
+            
+            <h2 id="learnTitle" class="text-3xl font-bold text-purple-700">Tekan warna untuk dengar!</h2>
+            
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-lg mx-auto" id="colorGrid">
+                </div>
+            
+            <div id="colorDisplay" class="w-full h-32 md:h-40 rounded-3xl border-4 border-dashed border-slate-400 flex items-center justify-center text-3xl font-black text-white bg-slate-200 transition-colors duration-300 shadow-inner">
+                ❓
+            </div>
+        </div>
+
+        <div id="gameModule" class="w-full hidden flex flex-col items-center space-y-4">
+            <div class="w-full">
+                <button onclick="goBack()" class="bubble-btn bg-gray-400 text-white px-4 py-2 rounded-full font-bold float-left text-lg">← <span id="backTxt2">Kembali</span></button>
+                <button onclick="clearCanvas()" class="bubble-btn bg-orange-400 text-white px-4 py-2 rounded-full font-bold float-right text-lg">🗑️ <span id="clearTxt">Padam</span></button>
+            </div>
+            
+            <h2 id="gameTitle" class="text-2xl font-bold text-purple-700 text-center">Warnakan lukisan di bawah!</h2>
+
+            <div class="relative bg-white border-8 border-yellow-300 rounded-3xl overflow-hidden shadow-lg w-full max-w-md aspect-square">
+                <canvas id="paintCanvas" class="w-full h-full block"></canvas>
+            </div>
+
+            <div class="color-palette bg-white p-3 rounded-2xl flex justify-center space-x-2 overflow-x-auto w-full max-w-md border-2 border-slate-200 shadow-md">
+                <button onclick="setPaintColor('#EF4444')" class="w-10 h-10 rounded-full bg-red-500 border-2 border-white scale-110 ring-4 ring-purple-400" data-color="#EF4444"></button>
+                <button onclick="setPaintColor('#3B82F6')" class="w-10 h-10 rounded-full bg-blue-500 border-2 border-white" data-color="#3B82F6"></button>
+                <button onclick="setPaintColor('#10B981')" class="w-10 h-10 rounded-full bg-emerald-500 border-2 border-white" data-color="#10B981"></button>
+                <button onclick="setPaintColor('#FBBF24')" class="w-10 h-10 rounded-full bg-amber-400 border-2 border-white" data-color="#FBBF24"></button>
+                <button onclick="setPaintColor('#EC4899')" class="w-10 h-10 rounded-full bg-pink-500 border-2 border-white" data-color="#EC4899"></button>
+                <button onclick="setPaintColor('#8B5CF6')" class="w-10 h-10 rounded-full bg-purple-500 border-2 border-white" data-color="#8B5CF6"></button>
+                <button onclick="setPaintColor('#FFFFFF')" class="w-10 h-10 rounded-full bg-white border-2 border-gray-300 flex items-center justify-center text-xs" data-color="#FFFFFF">🧽</button>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="p-2 text-center text-xs text-slate-400 font-sans">
+        &copy; 2026 Bjakcolouring Tadika Malaysia. Selamat & Interaktif.
+    </footer>
+
+    <script>
+        // --- FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDhdHPLAw6ox-oQctZ5qdf-qXRJik_1ATk",
+            authDomain: "bjakcolouring.firebaseapp.com",
+            databaseURL: "https://bjakcolouring-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "bjakcolouring",
+            storageBucket: "bjakcolouring.firebasestorage.app",
+            messagingSenderId: "982585892110",
+            appId: "1:982585892110:web:96db66396a1c9e6ad0cb5f"
+        };
+        
+        // Initialize Firebase safely
+        try {
+            firebase.initializeApp(firebaseConfig);
+            var database = firebase.database();
+        } catch (e) {
+            console.error("Firebase initialization failed:", e);
+        }
+
+        // --- STATE MANAGEMENT ---
+        let currentLang = 'BM';
+        let audioEnabled = true;
+        let selectedPaintColor = '#EF4444';
+
+        // --- DICTIONARY (BM / EN) ---
+        const langData = {
+            BM: {
+                welcome: "Hai kawan-kawan! Jom belajar warna! ✨",
+                btnLearn: "Kenal Warna",
+                btnGame: "Mari Mewarna",
+                learnTitle: "Tekan warna untuk dengar nama warna!",
+                gameTitle: "Warnakan lukisan di bawah!",
+                back: "Kembali",
+                clear: "Padam",
+                colors: {
+                    red: "Merah", blue: "Biru", green: "Hijau", 
+                    yellow: "Kuning", pink: "Merah Jambu", purple: "Ungu"
+                }
+            },
+            EN: {
+                welcome: "Hi friends! Let's learn colours! ✨",
+                btnLearn: "Learn Colours",
+                btnGame: "Let's Colour",
+                learnTitle: "Tap a colour to hear its name!",
+                gameTitle: "Colour the picture below!",
+                back: "Back",
+                clear: "Clear",
+                colors: {
+                    red: "Red", blue: "Blue", green: "Green", 
+                    yellow: "Yellow", pink: "Pink", purple: "Purple"
+                }
+            }
+        };
+
+        const colorItems = [
+            { id: 'red', hex: '#EF4444', bg: 'bg-red-500' },
+            { id: 'blue', hex: '#3B82F6', bg: 'bg-blue-500' },
+            { id: 'green', hex: '#10B981', bg: 'bg-green-500' },
+            { id: 'yellow', hex: '#FBBF24', bg: 'bg-amber-400' },
+            { id: 'pink', hex: '#EC4899', bg: 'bg-pink-500' },
+            { id: 'purple', hex: '#8B5CF6', bg: 'bg-purple-500' }
+        ];
+
+        // --- MULTILINGUAL AUDIO TTS ---
+        function speak(text) {
+            if (!audioEnabled) return;
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop current speech
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = currentLang === 'BM' ? 'ms-MY' : 'en-US';
+                utterance.rate = 0.85; // Slower for kids
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // --- CONTROLS & UI SWITCHES ---
+        function toggleLanguage() {
+            currentLang = currentLang === 'BM' ? 'EN' : 'BM';
+            document.getElementById('langBtn').innerText = currentLang === 'BM' ? '🇲🇾 BM' : '🇬🇧 EN';
+            updateLocalization();
+        }
+
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            document.getElementById('audioBtn').innerText = audioEnabled ? '🔊' : '🔇';
+        }
+
+        function updateLocalization() {
+            const data = langData[currentLang];
+            document.getElementById('welcomeTxt').innerText = data.welcome;
+            document.getElementById('btnLearn').innerText = data.btnLearn;
+            document.getElementById('btnGame').innerText = data.btnGame;
+            document.getElementById('learnTitle').innerText = data.learnTitle;
+            document.getElementById('gameTitle').innerText = data.gameTitle;
+            document.getElementById('backTxt1').innerText = data.back;
+            document.getElementById('backTxt2').innerText = data.back;
+            document.getElementById('clearTxt').innerText = data.clear;
+            
+            // Re-render color grid if visible to refresh labels
+            renderColorGrid();
+        }
+
+        function startModule(module) {
+            document.getElementById('menuModule').classList.add('hidden');
+            if (module === 'learn') {
+                document.getElementById('learnModule').classList.remove('hidden');
+                renderColorGrid();
+                speak(langData[currentLang].btnLearn);
+            } else if (module === 'game') {
+                document.getElementById('gameModule').classList.remove('hidden');
+                initCanvas();
+                speak(langData[currentLang].btnGame);
+            }
+            // Log interaction to Firebase for analytics
+            logToFirebase(module);
+        }
+
+        function goBack() {
+            document.getElementById('learnModule').classList.add('hidden');
+            document.getElementById('gameModule').classList.add('hidden');
+            document.getElementById('menuModule').classList.remove('hidden');
+            window.speechSynthesis.cancel();
+        }
+
+        // --- LEARN MODULE GENERATION ---
+        function renderColorGrid() {
+            const grid = document.getElementById('colorGrid');
+            grid.innerHTML = '';
+            colorItems.forEach(item => {
+                const btn = document.createElement('button');
+                btn.className = `bubble-btn ${item.bg} text-white font-bold p-6 rounded-2xl text-xl border-4 border-white/40 active:scale-95 transition-transform shadow-md`;
+                btn.innerText = langData[currentLang].colors[item.id];
+                btn.onclick = () => {
+                    const display = document.getElementById('colorDisplay');
+                    display.style.backgroundColor = item.hex;
+                    display.innerText = langData[currentLang].colors[item.id].toUpperCase();
+                    speak(langData[currentLang].colors[item.id]);
+                };
+                grid.appendChild(btn);
+            });
+        }
+
+        // --- CANVAS COLOURING ENGINE ---
+        const canvas = document.getElementById('paintCanvas');
+        const ctx = canvas.getContext('2d');
+        let painting = false;
+
+        function initCanvas() {
+            // Set canvas resolution size inside wrapper
+            canvas.width = 400;
+            canvas.height = 400;
+            clearCanvas();
+            
+            // Event Listeners for Touch & Mouse
+            canvas.addEventListener('mousedown', startPosition);
+            canvas.addEventListener('mouseup', endPosition);
+            canvas.addEventListener('mousemove', draw);
+            
+            canvas.addEventListener('touchstart', (e) => { startPosition(e.touches[0]); e.preventDefault(); });
+            canvas.addEventListener('touchend', endPosition);
+            canvas.addEventListener('touchmove', (e) => { draw(e.touches[0]); e.preventDefault(); });
+        }
+
+        function startPosition(e) {
+            painting = true;
+            draw(e);
+        }
+
+        function endPosition() {
